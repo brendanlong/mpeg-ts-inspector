@@ -41,7 +41,16 @@ if __name__ == "__main__":
 
     pmt_pids = set()
     pes_readers = {}
-    for ts_packet in read_ts(args.mpeg_ts_file):
+    ts_reader = read_ts(args.mpeg_ts_file)
+    while True:
+        try:
+            ts_packet = next(ts_reader)
+        except StopIteration:
+            break
+        except Exception as e:
+            print(e)
+            continue
+
         if args.show_ts and ts_packet.pid in args.filter:
             print(ts_packet)
             wait()

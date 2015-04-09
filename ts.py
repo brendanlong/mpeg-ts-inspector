@@ -13,13 +13,22 @@ import crcmod
 crc32 = crcmod.predefined.mkCrcFun("crc-32-mpeg")
 
 
-def read_ts(file_name):
-    with open(file_name, "rb") as f:
-        for byte_offset in count(step=TSPacket.SIZE):
-            ts_data = f.read(TSPacket.SIZE)
+class read_ts(object):
+    def __init__(self, file_name):
+        self.file = open(file_name, "rb")
+        self.byte_offset = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            ts_data = self.file.read(TSPacket.SIZE)
             if not ts_data:
-                break
-            yield TSPacket.parse(ts_data, byte_offset)
+                raise StopIteration()
+            return TSPacket.parse(ts_data, self.byte_offset)
+        finally:
+            self.byte_offset += TSPacket.SIZE
 
 
 def read_pes(media_segment, initialization_segment=None):
@@ -97,7 +106,9 @@ class TSPacket(object):
         data = BitStream(data)
         sync_byte = data.read("uint:8")
         if sync_byte != TSPacket.SYNC_BYTE:
-            raise Exception("First byte of TS packet is not a sync byte.")
+            raise Exception(
+                "First byte of TS packet at offset {} is not a sync byte."
+                .format(byte_offset))
 
         ts.transport_error_indicator = data.read("bool")
         ts.payload_unit_start_indicator = data.read("bool")
