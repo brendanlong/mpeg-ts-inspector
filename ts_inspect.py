@@ -48,30 +48,39 @@ if __name__ == "__main__":
         except StopIteration:
             break
         except Exception as e:
-            print(e)
+            print("Error reading TS packet: %s" % e)
             continue
 
         if args.show_ts and ts_packet.pid in args.filter:
             print(ts_packet)
             wait()
         if ts_packet.pid == ProgramAssociationTable.PID:
-            pat = ProgramAssociationTable(ts_packet.payload)
-            if args.show_pat and ts_packet.pid in args.filter:
-                print(pat)
-                wait()
-            pmt_pids.update(pat.programs.values())
+            try:
+                pat = ProgramAssociationTable(ts_packet.payload)
+                if args.show_pat and ts_packet.pid in args.filter:
+                    print(pat)
+                    wait()
+                pmt_pids.update(pat.programs.values())
+            except Exception as e:
+                print("Error reading PAT: %s" % e)
 
         elif ts_packet.pid in pmt_pids:
-            pmt = ProgramMapTable(ts_packet.payload)
-            if args.show_pmt and ts_packet.pid in args.filter:
-                print(pmt)
-                wait()
-            for pid in pmt.streams:
-                if pid not in pes_readers:
-                    pes_readers[pid] = PESReader()
+            try:
+                pmt = ProgramMapTable(ts_packet.payload)
+                if args.show_pmt and ts_packet.pid in args.filter:
+                    print(pmt)
+                    wait()
+                for pid in pmt.streams:
+                    if pid not in pes_readers:
+                        pes_readers[pid] = PESReader()
+            except Exception as e:
+                print("Error reading PMT: %s" % e)
 
         elif args.show_pes and ts_packet.pid in pes_readers:
-            pes_packet = pes_readers[ts_packet.pid].add_ts_packet(ts_packet)
-            if pes_packet and ts_packet.pid in args.filter:
-                print(pes_packet)
-                wait()
+            try:
+                pes_packet = pes_readers[ts_packet.pid].add_ts_packet(ts_packet)
+                if pes_packet and ts_packet.pid in args.filter:
+                    print(pes_packet)
+                    wait()
+            except Exception as e:
+                print("Error reading PES packet: %s" % e)
