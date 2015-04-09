@@ -97,6 +97,7 @@ class TSPacket(object):
         self.piecewise_rate = None
         self.splice_type = None
         self.dts_next_au = None
+        self.payload = None
 
     @staticmethod
     def parse(data, byte_offset):
