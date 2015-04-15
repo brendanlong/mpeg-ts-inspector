@@ -11,9 +11,9 @@ def del_none(o):
     This alters the input so you may wish to ``copy`` the dict first.
     """
     if isinstance(o, dict):
-        d = o
+        d = o.copy()
     else:
-        d = o.__dict__
+        d = o.__dict__.copy()
     for key, value in list(d.items()):
         if value is None:
             del d[key]
