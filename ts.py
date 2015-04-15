@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from itertools import count
+from itertools import chain, count
 import logging
 import struct
 import zlib
@@ -37,7 +37,7 @@ def read_pes(media_segment, initialization_segment=None):
     for segment in initialization_segment, media_segment:
         if not segment:
             continue
-        for ts_packet in read_ts(segment):
+        for ts_packet in chain(read_ts(segment), [None]):
             if ts_packet.pid == ProgramAssociationTable.PID:
                 pat = ProgramAssociationTable(ts_packet.payload)
                 pmt_pids.update(pat.programs.values())
@@ -546,35 +546,24 @@ class ProgramMapTable(object):
 class PESReader(object):
     def __init__(self):
         self.ts_packets = []
-        self.length = None
         self.data = []
 
     def add_ts_packet(self, ts_packet):
-        if not self.ts_packets and not ts_packet.payload_unit_start_indicator:
-            logging.debug("First TS packet for PID 0x{:02X} does not have "
-                          "payload_unit_start_indicator = 1. Ignoring this "
-                          "packet.".format(ts_packet.pid))
-            return None
+        pes_packet = None
+        if self.ts_packets and ts_packet.payload_unit_start_indicator:
+            try:
+                pes_packet = PESPacket(bytes(self.data), self.ts_packets)
+            except Exception as e:
+                logging.warning(e)
 
-        self.ts_packets.append(ts_packet)
-        if ts_packet.payload:
-            self.data.extend(ts_packet.payload)
-        if self.length is None and len(self.data) >= 6:
-            self.length, = struct.unpack("!xxxxH", bytes(self.data[:6]))
-            self.length -= 6
+            self.ts_packets = []
+            self.data = []
 
-        if len(self.data) < self.length:
-            return None
+        if ts_packet is not None:
+            self.ts_packets.append(ts_packet)
+            if ts_packet.payload:
+                self.data.extend(ts_packet.payload)
 
-        try:
-            pes_packet = PESPacket(bytes(self.data), self.ts_packets)
-        except Exception as e:
-            logging.warning(e)
-            pes_packet = None
-
-        self.ts_packets = []
-        self.data = []
-        self.length = None
         return pes_packet
 
 
