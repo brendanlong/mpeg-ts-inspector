@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import logging
 from ts import *
 import sys
 
@@ -34,7 +35,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--no-wait", help="Don't want for input after output",
         action="store_true", default=False)
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", default=False,
+        help="Enable verbose output.")
     args = parser.parse_args()
+
+    logging.basicConfig(
+        format='%(levelname)s: %(message)s',
+        level=logging.DEBUG if args.verbose else logging.INFO)
 
     def wait():
         if args.no_wait:
