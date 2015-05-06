@@ -3,6 +3,10 @@ import json
 from base64 import b64encode
 
 
+class ReprType(object):
+    """An object that should be inherited from to avoid being converted to a
+       JSON dict."""
+
 # http://stackoverflow.com/a/4256027/212555
 def del_none(o):
     """
@@ -30,6 +34,8 @@ def _to_json_dict(o):
             return b64encode(o)
     if isinstance(o, set):
         return list(o)
+    if isinstance(o, ReprType):
+        return repr(o)
     return o.__dict__
 
 

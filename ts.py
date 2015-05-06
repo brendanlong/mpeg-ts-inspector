@@ -6,7 +6,7 @@ import zlib
 
 import bitstring
 from bitstring import BitArray, BitStream
-from common import to_json
+from common import ReprType, to_json
 import crcmod
 
 
@@ -414,9 +414,73 @@ class Descriptor(object):
         return descriptors
 
 
+class StreamType(ReprType):
+    def __init__(self, num):
+        self.num = int(num)
+
+    def long(self):
+        if self.num == 0x00:
+            return "ITU-T | ISO/IEC Reserved"
+        elif self.num == 0x01:
+            return "ISO/IEC 11172 Video"
+        elif self.num == 0x02:
+            return "ITU-T Rec. H.262 | ISO/IEC 13818-2 Video or " \
+                "ISO/IEC 11172-2 constrained parameter video stream"
+        elif self.num == 0x03:
+            return "ISO/IEC 11172 Audio"
+        elif self.num == 0x04:
+            return "ISO/IEC 13818-3 Audio"
+        elif self.num == 0x05:
+            return "ITU-T Rec. H.222.0 | ISO/IEC 13818-1 private_sections"
+        elif self.num == 0x06:
+            return "ITU-T Rec. H.222.0 | ISO/IEC 13818-1 PES packets " \
+                "containing private data"
+        elif self.num == 0x07:
+            return "ISO/IEC 13522 MHEG"
+        elif self.num == 0x08:
+            return "ITU-T Rec. H.222.0 | ISO/IEC 13818-1 Annex A DSM-CC"
+        elif self.num == 0x09:
+            return "ITU-T Rec. H.222.1"
+        elif self.num == 0x0A:
+            return "ISO/IEC 13818-6 type A"
+        elif self.num == 0x0B:
+            return "ISO/IEC 13818-6 type B"
+        elif self.num == 0x0C:
+            return "ISO/IEC 13818-6 type C"
+        elif self.num == 0x0D:
+            return "ISO/IEC 13818-6 type D"
+        elif self.num == 0x0E:
+            return "ITU-T Rec. H.222.0 | ISO/IEC 13818-1 auxiliary"
+        elif self.num == 0x0F:
+            return "ISO/IEC 13818-7 Audio with ADTS transport syntax"
+        elif self.num == 0x10:
+            return "ISO/IEC 14496-2 Visual"
+        elif self.num == 0x11:
+            return "ISO/IEC 14496-3 Audio with the LATM transport " \
+                "syntax as defined in ISO/IEC 14496-3 / AMD 1"
+        elif self.num == 0x12:
+            return "ISO/IEC 14496-1 SL-packetized stream or FlexMux " \
+                "stream carried in PES packets"
+        elif self.num == 0x13:
+            return "ISO/IEC 14496-1 SL-packetized stream or FlexMux " \
+                "stream carried in ISO/IEC14496_sections"
+        elif self.num == 0x14:
+            return "ISO/IEC 13818-6 Synchronized Download Protocol"
+        elif self.num >= 0x15 and self.num <= 0x7F:
+            return "ITU-T Rec. H.222.0 | ISO/IEC 13818-1 Reserved"
+        else:
+            return "User Private"
+
+    def __int__(self):
+        return self.num
+
+    def __repr__(self):
+        return "0x{num:02x} ({long})".format(num=self.num, long=self.long())
+
+
 class Stream(object):
     def __init__(self, data):
-        self.stream_type = data.read("uint:8")
+        self.stream_type = StreamType(data.read("uint:8"))
         data.read(3)  # reserved
         self.elementary_pid = data.read("uint:13")
         data.read(4)  # reserved
